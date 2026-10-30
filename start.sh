@@ -10,6 +10,15 @@ WORKSPACE_DIR_PATH="${OPENCLAW_WORKSPACE_DIR:-/data/workspace}"
 mkdir -p "$DATA_DIR_PATH" "$STATE_DIR_PATH" "$STATE_DIR_PATH/tmp" "$STATE_DIR_PATH/state" "$WORKSPACE_DIR_PATH"
 chmod -R 777 "$DATA_DIR_PATH" 2>/dev/null || true
 
+# Purge stale OpenClaw runtime lockfiles and leases left by previous containers on persistent volume.
+# When a container restarts, Docker creates a new PID namespace inode. Stale leases in openclaw.sqlite
+# and *.lock files trigger GatewayLockNamespaceError if checked within 90 seconds.
+rm -rf "$STATE_DIR_PATH/tmp"/* /tmp/openclaw* 2>/dev/null || true
+find "$STATE_DIR_PATH" -name "*.lock" -delete 2>/dev/null || true
+if [ -f "$STATE_DIR_PATH/state/openclaw.sqlite" ]; then
+  python3 -c "import sqlite3; con=sqlite3.connect('$STATE_DIR_PATH/state/openclaw.sqlite'); con.execute('DELETE FROM state_leases WHERE scope=\"gateway-owner\" OR key=\"global\"'); con.commit(); con.close()" 2>/dev/null || true
+fi
+
 # Start Gmail polling in the background.
 python3 -m monitor.main &
 MONITOR_PID=$!
@@ -17,6 +26,8 @@ MONITOR_PID=$!
 cleanup() {
   kill "$MONITOR_PID" 2>/dev/null || true
   wait "$MONITOR_PID" 2>/dev/null || true
+  rm -rf "$STATE_DIR_PATH/tmp"/* /tmp/openclaw* 2>/dev/null || true
+  find "$STATE_DIR_PATH" -name "*.lock" -delete 2>/dev/null || true
 }
 trap cleanup EXIT TERM INT
 
