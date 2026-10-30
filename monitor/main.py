@@ -9,14 +9,14 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL","INFO"), format="%(asctime)s %(l
 log = logging.getLogger("amazon-monitor")
 
 def gmail_query():
-    days = int(os.getenv("INITIAL_LOOKBACK_DAYS", "30"))
+    days = int(os.getenv("INITIAL_LOOKBACK_DAYS", "3"))
     after = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y/%m/%d")
     return f'after:{after} {{from:(amazon.in) from:(amazon.com) from:(marketplace.amazon)}}'
 
 def poll_once():
     con = connect()
     try:
-        messages = fetch_messages(gmail_query(), max_results=100)
+        messages = fetch_messages(gmail_query(), max_results=20)
         log.info("Fetched %d candidate Gmail messages", len(messages))
         dry_run = os.getenv("DRY_RUN", "false").lower() == "true"
         for msg in reversed(messages):

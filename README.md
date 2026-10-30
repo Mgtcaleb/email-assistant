@@ -39,7 +39,7 @@ Do not commit `credentials.json`, token files, or refresh tokens.
 ## 3. Deploy to Render
 1. Create a private GitHub repository and upload this project (do not upload `credentials.json`).
 2. In Render, choose **New → Blueprint**, connect the repository, and apply `render.yaml`.
-3. Render creates a paid Starter web service with a 1 GB persistent disk. This is intentional: OpenClaw state and SQLite must survive restarts/redeploys. Free Render services cannot use persistent disks and may spin down.
+3. Render creates a paid Standard web service (2 GB RAM) with a 1 GB persistent disk. This is intentional: OpenClaw state and SQLite must survive restarts/redeploys. Free Render services cannot use persistent disks and may spin down.
 4. In Render → service → Environment, set:
    - `GMAIL_CLIENT_ID`
    - `GMAIL_CLIENT_SECRET`
@@ -52,7 +52,7 @@ Do not commit `credentials.json`, token files, or refresh tokens.
    - Optional: `OPENAI_API_KEY` if you want to configure an OpenAI model for interactive OpenClaw use. The Gmail monitor does not need an LLM key.
 5. Save changes and let Render redeploy.
 6. Open `https://YOUR-SERVICE.onrender.com/startupz` and confirm the OpenClaw Gateway health check responds successfully.
-7. Open the service logs. The monitor logs Gmail polling and Slack delivery outcomes. A missing-credentials warning means the Gmail/Slack environment variables are not complete. Do not enable verbose email-body logging.
+7. Open the service logs. The monitor fetches at most 20 messages per poll and pauses between Gmail message reads to reduce Gmail API quota pressure. The monitor logs Gmail polling and Slack delivery outcomes. A missing-credentials warning means the Gmail/Slack environment variables are not complete. Do not enable verbose email-body logging.
 
 ## 4. OpenClaw UI
 - Render URL: `https://YOUR-SERVICE.onrender.com/`

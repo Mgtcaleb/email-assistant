@@ -2,10 +2,10 @@ services:
   - type: web
     name: openclaw-amazon-slack
     runtime: docker
-    plan: starter
+    plan: standard
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /startupz
+    healthCheckPath: /
     envVars:
       - key: PORT
         value: "8080"
@@ -34,7 +34,7 @@ services:
       - key: POLL_SECONDS
         value: "300"
       - key: INITIAL_LOOKBACK_DAYS
-        value: "30"
+        value: "3"
       - key: DRY_RUN
         value: "true"
     disk:
