@@ -53,7 +53,7 @@ Do not commit `credentials.json`, token files, or refresh tokens.
    - Optional: `HEARTBEAT_HOURS=12` (sends periodic health status to Slack)
    - Optional: `OPENAI_API_KEY` if you want to configure an OpenAI model for interactive OpenClaw use. The Gmail monitor does not need an LLM key.
 5. Save changes and let Render redeploy.
-6. Open `https://YOUR-SERVICE.onrender.com/startupz` and confirm the OpenClaw Gateway health check responds successfully (port 10000).
+6. Open `https://YOUR-SERVICE.onrender.com/healthz` and confirm the OpenClaw Gateway health check responds successfully (port 10000).
 7. Open the service logs. The monitor fetches at most 20 messages per poll and pauses between Gmail message reads to reduce Gmail API quota pressure. The monitor logs Gmail polling and Slack delivery outcomes. A missing-credentials warning means the Gmail/Slack environment variables are not complete. Do not enable verbose email-body logging.
 
 ## 4. Keep 24x7 Online & Online Status Feature
@@ -62,7 +62,7 @@ Render free tier instances automatically spin down after 15 minutes of inbound H
 
 ### Automatic 24x7 Keep-Alive via GitHub Actions
 - This repository includes `.github/workflows/keep_alive.yml`.
-- It triggers automatically every 14 minutes (`*/14 * * * *`) via GitHub Actions, sending a `GET` probe to `https://openclaw-amazon-slack.onrender.com/startupz`.
+- It triggers automatically every 14 minutes (`*/14 * * * *`) via GitHub Actions, sending a `GET` probe to `https://openclaw-amazon-slack.onrender.com/healthz`.
 - This ensures Render never spins down your web service.
 - If you use a custom Render service URL, set repository secret `RENDER_SERVICE_URL` in **GitHub → Settings → Secrets and variables → Actions**.
 - Add repository secret `SLACK_WEBHOOK_URL` to receive alerts if Render ever goes offline.
@@ -70,7 +70,7 @@ Render free tier instances automatically spin down after 15 minutes of inbound H
 ### Local / Cron Keep-Alive Script
 You can also run the monitor script from any machine or cron job:
 ```bash
-python3 scripts/keep_alive.py --url https://YOUR-SERVICE.onrender.com/startupz
+python3 scripts/keep_alive.py --url https://YOUR-SERVICE.onrender.com/healthz
 ```
 
 ### Online Status Slack Alerts

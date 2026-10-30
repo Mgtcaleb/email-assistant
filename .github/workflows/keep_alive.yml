@@ -9,7 +9,7 @@ on:
       service_url:
         description: 'URL to ping for keep-alive & health check'
         required: false
-        default: 'https://openclaw-amazon-slack.onrender.com/startupz'
+        default: 'https://openclaw-amazon-slack.onrender.com/healthz'
 
 jobs:
   keep-alive:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Ping Render Service
         env:
-          SERVICE_URL: ${{ github.event.inputs.service_url || secrets.RENDER_SERVICE_URL || 'https://openclaw-amazon-slack.onrender.com/startupz' }}
+          SERVICE_URL: ${{ github.event.inputs.service_url || secrets.RENDER_SERVICE_URL || 'https://openclaw-amazon-slack.onrender.com/healthz' }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           echo "================================================="

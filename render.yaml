@@ -5,7 +5,7 @@ services:
     plan: standard
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /startupz
+    healthCheckPath: /healthz
     envVars:
       - key: PORT
         value: "10000"

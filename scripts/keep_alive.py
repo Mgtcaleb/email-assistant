@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-DEFAULT_URL = os.getenv("RENDER_SERVICE_URL", "https://openclaw-amazon-slack.onrender.com/startupz")
+DEFAULT_URL = os.getenv("RENDER_SERVICE_URL", "https://openclaw-amazon-slack.onrender.com/healthz")
 
 def check_online_status(url: str, timeout: int = 25) -> tuple[bool, int, str, float]:
     """Sends an HTTP GET probe and returns (is_online, status_code, response_text, latency_ms)."""

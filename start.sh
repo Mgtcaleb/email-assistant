@@ -19,6 +19,22 @@ if [ -f "$STATE_DIR_PATH/state/openclaw.sqlite" ]; then
   python3 -c "import sqlite3; con=sqlite3.connect('$STATE_DIR_PATH/state/openclaw.sqlite'); con.execute('DELETE FROM state_leases WHERE scope=\"gateway-owner\" OR key=\"global\"'); con.commit(); con.close()" 2>/dev/null || true
 fi
 
+# Configure gateway.trustedProxies so Render internal proxy router (10.x.x.x) is trusted
+python3 -c "
+import json, os
+cfg_path = '$STATE_DIR_PATH/openclaw.json'
+cfg = {}
+if os.path.exists(cfg_path):
+    try:
+        with open(cfg_path, 'r') as f: cfg = json.load(f)
+    except Exception: cfg = {}
+gw = cfg.setdefault('gateway', {})
+tp = gw.setdefault('trustedProxies', [])
+for c in ['10.0.0.0/8', '172.16.0.0/12', '127.0.0.1']:
+    if c not in tp: tp.append(c)
+with open(cfg_path, 'w') as f: json.dump(cfg, f, indent=2)
+" 2>/dev/null || true
+
 # Start Gmail polling in the background.
 python3 -m monitor.main &
 MONITOR_PID=$!
