@@ -30,3 +30,52 @@ def send_alert(order, previous=None, dry_run=False):
     if response.text.strip().lower() != "ok":
         raise RuntimeError(f"Slack webhook returned unexpected response: {response.text[:200]}")
     print(f"Slack alert sent for order {order['order_id']}", flush=True)
+
+def send_online_alert(details=None, dry_run=False):
+    webhook = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook:
+        print("[WARNING] SLACK_WEBHOOK_URL is not configured; cannot send online alert", flush=True)
+        return
+    details = details or {}
+    lines = [
+        "🟢 *OpenClaw Amazon Monitor is ONLINE*",
+        "*Status:* Active & Monitoring Gmail",
+        f"*Port:* `{details.get('port', os.getenv('PORT', '10000'))}`",
+        f"*Poll Interval:* {details.get('poll_interval', os.getenv('POLL_SECONDS', '300'))}s",
+        f"*Lookback Days:* {details.get('lookback_days', os.getenv('INITIAL_LOOKBACK_DAYS', '3'))}",
+        f"*Marketplaces:* {os.getenv('AMAZON_MARKETS', 'amazon.in,amazon.com')}",
+    ]
+    if dry_run or os.getenv("DRY_RUN", "false").lower() == "true":
+        lines.append("_Mode: DRY RUN (alerts will be logged, not posted)_")
+    payload = {"text": "\n".join(lines)}
+    if dry_run:
+        print("[DRY RUN] Slack online alert: " + payload["text"].replace("\n", " | "), flush=True)
+        return
+    try:
+        response = requests.post(webhook, json=payload, timeout=15)
+        response.raise_for_status()
+        print("Slack online status alert sent successfully", flush=True)
+    except Exception as e:
+        print(f"[WARNING] Failed to send Slack online alert: {e}", flush=True)
+
+def send_heartbeat_alert(stats=None, dry_run=False):
+    webhook = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook:
+        return
+    stats = stats or {}
+    lines = [
+        "💓 *OpenClaw Monitor Heartbeat*",
+        "*Status:* Healthy & Running 24x7",
+        f"*Uptime:* {stats.get('uptime', 'N/A')}",
+        f"*Orders Tracked:* {stats.get('orders_count', 0)}",
+        f"*Last Poll:* {stats.get('last_poll', 'Just now')}",
+    ]
+    payload = {"text": "\n".join(lines)}
+    if dry_run:
+        print("[DRY RUN] Slack heartbeat: " + payload["text"].replace("\n", " | "), flush=True)
+        return
+    try:
+        response = requests.post(webhook, json=payload, timeout=15)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[WARNING] Failed to send heartbeat alert: {e}", flush=True)

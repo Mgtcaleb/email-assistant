@@ -49,24 +49,48 @@ Do not commit `credentials.json`, token files, or refresh tokens.
    - Optional: `AMAZON_MARKETS=amazon.in,amazon.com`
    - Optional: `POLL_SECONDS=300`
    - Optional: `INITIAL_LOOKBACK_DAYS=30`
+   - Optional: `SEND_ONLINE_ALERT=true` (sends a 🟢 ONLINE notification to Slack when started)
+   - Optional: `HEARTBEAT_HOURS=12` (sends periodic health status to Slack)
    - Optional: `OPENAI_API_KEY` if you want to configure an OpenAI model for interactive OpenClaw use. The Gmail monitor does not need an LLM key.
 5. Save changes and let Render redeploy.
-6. Open `https://YOUR-SERVICE.onrender.com/startupz` and confirm the OpenClaw Gateway health check responds successfully.
+6. Open `https://YOUR-SERVICE.onrender.com/startupz` and confirm the OpenClaw Gateway health check responds successfully (port 10000).
 7. Open the service logs. The monitor fetches at most 20 messages per poll and pauses between Gmail message reads to reduce Gmail API quota pressure. The monitor logs Gmail polling and Slack delivery outcomes. A missing-credentials warning means the Gmail/Slack environment variables are not complete. Do not enable verbose email-body logging.
 
-## 4. OpenClaw UI
+## 4. Keep 24x7 Online & Online Status Feature
+
+Render free tier instances automatically spin down after 15 minutes of inbound HTTP inactivity. To keep your service active 24x7 and monitor its health:
+
+### Automatic 24x7 Keep-Alive via GitHub Actions
+- This repository includes `.github/workflows/keep_alive.yml`.
+- It triggers automatically every 14 minutes (`*/14 * * * *`) via GitHub Actions, sending a `GET` probe to `https://openclaw-amazon-slack.onrender.com/startupz`.
+- This ensures Render never spins down your web service.
+- If you use a custom Render service URL, set repository secret `RENDER_SERVICE_URL` in **GitHub → Settings → Secrets and variables → Actions**.
+- Add repository secret `SLACK_WEBHOOK_URL` to receive alerts if Render ever goes offline.
+
+### Local / Cron Keep-Alive Script
+You can also run the monitor script from any machine or cron job:
+```bash
+python3 scripts/keep_alive.py --url https://YOUR-SERVICE.onrender.com/startupz
+```
+
+### Online Status Slack Alerts
+- **Startup Alert**: When the container boots up, it automatically sends a `🟢 OpenClaw Amazon Monitor is ONLINE` card to your configured Slack channel.
+- **Heartbeat Alerts**: Set `HEARTBEAT_HOURS=12` (or any interval) to receive periodic status reports with uptime and order tracking metrics.
+- **Diagnostic Snapshot**: Run `python3 -m monitor.health` inside the container or locally to inspect SQLite state and connectivity.
+
+## 5. OpenClaw UI
 - Render URL: `https://YOUR-SERVICE.onrender.com/`
 - Gateway token: Render Dashboard → service → Environment → `OPENCLAW_GATEWAY_TOKEN`.
 - The token is a secret. Do not share it or put it in a public URL.
 - For interactive agent replies, configure a supported model provider in OpenClaw. The background Gmail monitor works independently.
 
-## 5. Test safely
+## 6. Test safely
 1. First set `DRY_RUN=true`. The monitor logs what it would post but does not send Slack messages.
 2. Confirm the correct Gmail account and Amazon messages are detected.
 3. Set `DRY_RUN=false` (or leave unset; default is false) to enable Slack.
 4. Use `python -m monitor.main --once` locally to run a one-time poll after configuring `.env` or environment variables.
 
-## 6. Alert behavior
+## 7. Alert behavior
 Statuses: `ORDER_PLACED`, `SHIPPED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`, `RETURNED`, `UNKNOWN`.
 
 The monitor sends an alert for:
@@ -76,7 +100,7 @@ The monitor sends an alert for:
 
 Repeated messages with no meaningful change are suppressed.
 
-## 7. Security / operations
+## 8. Security / operations
 - Gmail OAuth scope is `https://www.googleapis.com/auth/gmail.readonly`.
 - The service does not request Gmail send/modify permissions.
 - Slack is the only notification destination.
@@ -89,5 +113,7 @@ Repeated messages with no meaningful change are suppressed.
 ## Files
 - `Dockerfile`: builds Node + OpenClaw + Python monitor runtime.
 - `render.yaml`: Render Blueprint, persistent disk, generated gateway token.
-- `monitor/`: Gmail polling, parsing, SQLite state, Slack notifier.
+- `.github/workflows/keep_alive.yml`: 24x7 keep-alive workflow (runs every 14 mins).
+- `monitor/`: Gmail polling, parsing, SQLite state, Slack notifier, online status.
 - `scripts/get_refresh_token.py`: one-time local OAuth helper.
+- `scripts/keep_alive.py`: standalone keep-alive pinger and status monitor.

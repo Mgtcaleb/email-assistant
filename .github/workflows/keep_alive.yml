@@ -1,0 +1,48 @@
+name: Keep Render Online 24x7
+
+on:
+  schedule:
+    # Trigger every 14 minutes to prevent Render free-tier services from sleeping (15 min inactivity timeout)
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+    inputs:
+      service_url:
+        description: 'URL to ping for keep-alive & health check'
+        required: false
+        default: 'https://openclaw-amazon-slack.onrender.com/startupz'
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        env:
+          SERVICE_URL: ${{ github.event.inputs.service_url || secrets.RENDER_SERVICE_URL || 'https://openclaw-amazon-slack.onrender.com/startupz' }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo "================================================="
+          echo "Target Service URL: $SERVICE_URL"
+          echo "Triggered at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "================================================="
+
+          # Perform HTTP GET request with max 25s timeout
+          HTTP_STATUS=$(curl -s -o response.txt -w "%{http_code}" --max-time 25 "$SERVICE_URL" || echo "FAILED")
+          RESPONSE_BODY=$(cat response.txt 2>/dev/null | head -c 200 || echo "")
+
+          echo "HTTP Response Code: $HTTP_STATUS"
+          echo "Response Body: $RESPONSE_BODY"
+
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 301 ] || [ "$HTTP_STATUS" -eq 302 ]; then
+            echo "::notice ::🟢 Render Service is ONLINE (HTTP $HTTP_STATUS)"
+          else
+            echo "::error ::🔴 Render Service is OFFLINE or UNREACHABLE (HTTP $HTTP_STATUS)"
+
+            # Notify Slack if webhook secret is configured in repo settings
+            if [ -n "$SLACK_WEBHOOK" ]; then
+              curl -s -X POST -H 'Content-type: application/json' \
+                --data "{\"text\":\"⚠️ *Render Service Alert*\n*URL:* $SERVICE_URL\n*Status:* 🔴 OFFLINE / Unresponsive (HTTP $HTTP_STATUS)\n*Time:* $(date -u '+%Y-%m-%d %H:%M:%S UTC')\"}" \
+                "$SLACK_WEBHOOK" || true
+            fi
+
+            exit 1
+          fi

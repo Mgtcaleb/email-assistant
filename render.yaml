@@ -5,12 +5,12 @@ services:
     plan: standard
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /
+    healthCheckPath: /startupz
     envVars:
       - key: PORT
-        value: "8080"
+        value: "10000"
       - key: OPENCLAW_GATEWAY_PORT
-        value: "8080"
+        value: "10000"
       - key: OPENCLAW_GATEWAY_TOKEN
         generateValue: true
       - key: OPENCLAW_STATE_DIR
@@ -36,6 +36,8 @@ services:
       - key: INITIAL_LOOKBACK_DAYS
         value: "3"
       - key: DRY_RUN
+        value: "true"
+      - key: SEND_ONLINE_ALERT
         value: "true"
     disk:
       name: openclaw-amazon-data

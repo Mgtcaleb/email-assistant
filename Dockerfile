@@ -3,7 +3,8 @@ FROM node:24-bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    OPENCLAW_GATEWAY_PORT=8080 \
+    PORT=10000 \
+    OPENCLAW_GATEWAY_PORT=10000 \
     OPENCLAW_STATE_DIR=/data/.openclaw \
     OPENCLAW_WORKSPACE_DIR=/data/workspace \
     DATA_DIR=/data
@@ -23,6 +24,6 @@ COPY scripts ./scripts
 COPY start.sh ./start.sh
 RUN chmod +x /app/start.sh && mkdir -p /data
 
-EXPOSE 8080
+EXPOSE 10000
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/app/start.sh"]

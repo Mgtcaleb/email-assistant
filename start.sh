@@ -13,10 +13,16 @@ cleanup() {
 }
 trap cleanup EXIT TERM INT
 
-# Render requires a service to listen on 0.0.0.0 and on its PORT.
-GATEWAY_PORT="${PORT:-${OPENCLAW_GATEWAY_PORT:-8080}}"
+# Ensure OPENCLAW_GATEWAY_TOKEN is available; generate fallback to prevent startup crash
+if [ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
+  OPENCLAW_GATEWAY_TOKEN=$(node -e "console.log(crypto.randomBytes(32).toString('hex'))")
+  echo "[start.sh] Notice: OPENCLAW_GATEWAY_TOKEN was not configured. Auto-generated token: ${OPENCLAW_GATEWAY_TOKEN}"
+fi
+
+# Render requires a service to listen on 0.0.0.0 and dynamically respects its PORT variable (default 10000).
+GATEWAY_PORT="${PORT:-${OPENCLAW_GATEWAY_PORT:-10000}}"
 node "$(npm root -g)/openclaw/openclaw.mjs" gateway \
   --allow-unconfigured \
   --bind lan \
   --port "$GATEWAY_PORT" \
-  --token "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN is required}"
+  --token "$OPENCLAW_GATEWAY_TOKEN"
