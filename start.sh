@@ -19,7 +19,7 @@ if [ -f "$STATE_DIR_PATH/state/openclaw.sqlite" ]; then
   python3 -c "import sqlite3; con=sqlite3.connect('$STATE_DIR_PATH/state/openclaw.sqlite'); con.execute('DELETE FROM state_leases WHERE scope=\"gateway-owner\" OR key=\"global\"'); con.commit(); con.close()" 2>/dev/null || true
 fi
 
-# Configure gateway.trustedProxies so Render internal proxy router (10.x.x.x) is trusted
+# Configure gateway.trustedProxies and controlUi.allowedOrigins for Render
 python3 -c "
 import json, os
 cfg_path = '$STATE_DIR_PATH/openclaw.json'
@@ -32,6 +32,21 @@ gw = cfg.setdefault('gateway', {})
 tp = gw.setdefault('trustedProxies', [])
 for c in ['10.0.0.0/8', '172.16.0.0/12', '127.0.0.1']:
     if c not in tp: tp.append(c)
+
+cui = gw.setdefault('controlUi', {})
+origins = cui.setdefault('allowedOrigins', [])
+allowed = [
+    'https://openclaw-amazon-slack.onrender.com',
+    'http://localhost:10000',
+    'http://127.0.0.1:10000',
+]
+ext = os.getenv('RENDER_EXTERNAL_URL')
+if ext:
+    allowed.append(ext.rstrip('/'))
+for o in allowed:
+    if o not in origins: origins.append(o)
+cui['dangerouslyAllowHostHeaderOriginFallback'] = True
+
 with open(cfg_path, 'w') as f: json.dump(cfg, f, indent=2)
 " 2>/dev/null || true
 
