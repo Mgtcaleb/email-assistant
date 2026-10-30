@@ -1,7 +1,14 @@
 #!/bin/bash
 set -Eeuo pipefail
 
-mkdir -p "${DATA_DIR:-/data}" "${OPENCLAW_STATE_DIR:-/data/.openclaw}" "${OPENCLAW_WORKSPACE_DIR:-/data/workspace}"
+DATA_DIR_PATH="${DATA_DIR:-/data}"
+STATE_DIR_PATH="${OPENCLAW_STATE_DIR:-/data/.openclaw}"
+WORKSPACE_DIR_PATH="${OPENCLAW_WORKSPACE_DIR:-/data/workspace}"
+
+# Create all required OpenClaw subdirectories. OpenClaw uses non-recursive mkdirSync
+# for temporary lockfiles, which throws ENOENT if .openclaw/tmp does not exist.
+mkdir -p "$DATA_DIR_PATH" "$STATE_DIR_PATH" "$STATE_DIR_PATH/tmp" "$STATE_DIR_PATH/state" "$WORKSPACE_DIR_PATH"
+chmod -R 777 "$DATA_DIR_PATH" 2>/dev/null || true
 
 # Start Gmail polling in the background.
 python3 -m monitor.main &
@@ -25,4 +32,5 @@ node "$(npm root -g)/openclaw/openclaw.mjs" gateway \
   --allow-unconfigured \
   --bind lan \
   --port "$GATEWAY_PORT" \
-  --token "$OPENCLAW_GATEWAY_TOKEN"
+  --token "$OPENCLAW_GATEWAY_TOKEN" \
+  --verbose

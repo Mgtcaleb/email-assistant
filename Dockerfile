@@ -23,7 +23,7 @@ RUN python3 -m pip install --break-system-packages -r requirements.txt
 COPY monitor ./monitor
 COPY scripts ./scripts
 COPY start.sh ./start.sh
-RUN chmod +x /app/start.sh && mkdir -p /data
+RUN chmod +x /app/start.sh && mkdir -p /data/.openclaw/tmp /data/.openclaw/state /data/workspace
 
 EXPOSE 10000
 ENTRYPOINT ["/usr/bin/tini", "--"]
