@@ -79,3 +79,64 @@ def send_heartbeat_alert(stats=None, dry_run=False):
         response.raise_for_status()
     except Exception as e:
         print(f"[WARNING] Failed to send heartbeat alert: {e}", flush=True)
+
+def send_daily_summary_slack(summary_data: dict, dry_run=False):
+    webhook = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook:
+        print("[WARNING] SLACK_WEBHOOK_URL is not configured; cannot send daily summary", flush=True)
+        return
+
+    today_str = summary_data.get("today_str", "Today")
+    day1_str = summary_data.get("day1_str", "Tomorrow (+1 Day)")
+    day2_str = summary_data.get("day2_str", "Day After Tomorrow (+2 Days)")
+    date_heading = summary_data.get("date_heading", "")
+
+    today_orders = summary_data.get("today_orders", [])
+    day1_orders = summary_data.get("day1_orders", [])
+    day2_orders = summary_data.get("day2_orders", [])
+
+    total = len(today_orders) + len(day1_orders) + len(day2_orders)
+
+    lines = [
+        "📦 *Amazon.in Delivery Summary (10:00 AM IST)*",
+        f"📅 _{date_heading}_",
+        "",
+        f"*Today ({today_str}):* {len(today_orders)} order{'s' if len(today_orders) != 1 else ''} expected",
+    ]
+    if today_orders:
+        for o in today_orders:
+            lines.append(f"  • `{o['order_id']}` | *Status:* {o['status'].replace('_', ' ').title()} | *ETA:* {o.get('eta') or 'Today'}")
+    else:
+        lines.append("  • _No orders scheduled_")
+
+    lines.append("")
+    lines.append(f"*Tomorrow ({day1_str}):* {len(day1_orders)} order{'s' if len(day1_orders) != 1 else ''} expected")
+    if day1_orders:
+        for o in day1_orders:
+            lines.append(f"  • `{o['order_id']}` | *Status:* {o['status'].replace('_', ' ').title()} | *ETA:* {o.get('eta') or 'Tomorrow'}")
+    else:
+        lines.append("  • _No orders scheduled_")
+
+    lines.append("")
+    lines.append(f"*Day After Tomorrow ({day2_str}):* {len(day2_orders)} order{'s' if len(day2_orders) != 1 else ''} expected")
+    if day2_orders:
+        for o in day2_orders:
+            lines.append(f"  • `{o['order_id']}` | *Status:* {o['status'].replace('_', ' ').title()} | *ETA:* {o.get('eta') or 'In 2 days'}")
+    else:
+        lines.append("  • _No orders scheduled_")
+
+    lines.append("")
+    lines.append(f"_Total Amazon.in orders expected over next 3 days: {total}_")
+
+    payload = {"text": "\n".join(lines)}
+    if dry_run or os.getenv("DRY_RUN", "false").lower() == "true":
+        print("[DRY RUN] Slack Daily Summary:\n" + payload["text"], flush=True)
+        return
+
+    try:
+        response = requests.post(webhook, json=payload, timeout=20)
+        response.raise_for_status()
+        print(f"Daily 10 AM IST summary sent to Slack (total {total} orders)", flush=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to post daily summary to Slack: {e}", flush=True)
+        raise

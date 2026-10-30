@@ -78,6 +78,19 @@ python3 scripts/keep_alive.py --url https://YOUR-SERVICE.onrender.com/startupz
 - **Heartbeat Alerts**: Set `HEARTBEAT_HOURS=12` (or any interval) to receive periodic status reports with uptime and order tracking metrics.
 - **Diagnostic Snapshot**: Run `python3 -m monitor.health` inside the container or locally to inspect SQLite state and connectivity.
 
+### Daily 10:00 AM IST Amazon.in Delivery Summary
+- Automatically sends a summary card to Slack every morning at **10:00 AM IST** (`UTC+05:30`).
+- Summarizes expected Amazon.in deliveries across 3 days:
+  - **Today**
+  - **Tomorrow (+1 Day)**
+  - **Day After Tomorrow (+2 Days)**
+- Guaranteed idempotency (tracked in SQLite `daily_summaries` table to send exactly once per day).
+- **Test on-demand**:
+  ```bash
+  python3 -m monitor.main --summary --dry-run
+  ```
+  *(Add `--summary-force` to send even if today's summary was already posted).*
+
 ## 5. OpenClaw UI
 - Render URL: `https://YOUR-SERVICE.onrender.com/`
 - Gateway token: Render Dashboard → service → Environment → `OPENCLAW_GATEWAY_TOKEN`.
