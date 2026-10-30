@@ -2,6 +2,7 @@ FROM node:24-bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
+    PYTHONWARNINGS="ignore:::google.api_core._python_version_support" \
     PIP_NO_CACHE_DIR=1 \
     PORT=10000 \
     OPENCLAW_GATEWAY_PORT=10000 \
